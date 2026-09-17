@@ -2,31 +2,194 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
-import { ServiceMark } from "@/components/service-mark";
-import { Button } from "@/components/ui/button";
+import { Search, ShoppingCart } from "lucide-react";
+import { HexMark } from "@/components/hex-mark";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatTL } from "@/lib/format";
-import type { PlatformSummary } from "@/lib/platform-types";
+import type { CountrySummary, PlatformSummary, ServiceOption } from "@/lib/platform-types";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+function Flag({ alpha2 }: { alpha2: string }) {
+  const code = alpha2.trim().toLowerCase();
+  if (code.length === 2) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`https://flagcdn.com/w20/${code}.png`}
+        alt=""
+        width={18}
+        height={12}
+        className="h-3 w-[18px] rounded-[2px] object-cover"
+      />
+    );
+  }
+  return <span className="text-[11px]">🌐</span>;
+}
+
+function PlatformCard({
+  platform,
+  defaultCountry,
+  busy,
+  onBuy,
+}: {
+  platform: PlatformSummary;
+  defaultCountry?: string;
+  busy: boolean;
+  onBuy: (input: {
+    country: CountrySummary;
+    service: ServiceOption;
+    qty: number;
+  }) => Promise<void>;
+}) {
+  const first =
+    (defaultCountry
+      ? platform.countries.find((c) => c.code === defaultCountry && c.stock > 0)
+      : null) ??
+    platform.countries.find((c) => c.stock > 0) ??
+    platform.countries[0];
+  const [countryOverride, setCountryOverride] = useState<string | null>(null);
+  const countryCode = countryOverride ?? first?.code ?? "";
+  const country =
+    platform.countries.find((c) => c.code === countryCode) ?? first;
+  const services = country?.services?.length
+    ? country.services
+    : country?.best
+      ? [country.best]
+      : [];
+  const [serviceOverride, setServiceOverride] = useState<string | null>(null);
+  const service =
+    services.find((s) => s.code === serviceOverride) ??
+    services.find((s) => s.code === country?.best?.code) ??
+    services[0] ??
+    null;
+  const [qty, setQty] = useState(1);
+
+  const stock = service?.count ?? country?.stock ?? 0;
+  const price = service?.price ?? 0;
+  const total = price * qty;
+  const canBuy = Boolean(service && stock > 0);
+
+  return (
+    <article className="flex flex-col rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgba(40,44,90,0.06)]">
+      <div className="flex flex-col items-center pt-2">
+        <HexMark className="size-12" />
+        <h2 className="mt-3 line-clamp-1 text-center text-[17px] font-semibold text-[#2b2f5c]">
+          {platform.name}
+        </h2>
+      </div>
+
+      <label className="relative mt-4 block">
+        <span className="pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2">
+          <Flag alpha2={country?.alpha2 ?? ""} />
+        </span>
+        <select
+          className="h-10 w-full appearance-none rounded-lg border border-[#eceef8] bg-white pl-9 pr-8 text-sm text-[#2b2f5c] outline-none focus:border-[#4f46e5]"
+          value={country?.code ?? ""}
+          onChange={(e) => {
+            setCountryOverride(e.target.value);
+            setServiceOverride(null);
+          }}
+          aria-label={`${platform.name} ülke`}
+        >
+          {platform.countries.map((c) => (
+            <option key={c.code} value={c.code} disabled={c.stock === 0}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {services.length === 0 ? (
+          <span className="text-xs text-muted-foreground">Servis yok</span>
+        ) : (
+          services.map((item) => (
+            <button
+              key={item.code}
+              type="button"
+              onClick={() => setServiceOverride(item.code)}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium",
+                item.code === service?.code
+                  ? "bg-[#3d4dff] text-white"
+                  : "bg-[#e8ebff] text-[#3d4dff]",
+              )}
+            >
+              {item.code}
+            </button>
+          ))
+        )}
+      </div>
+
+      <div className="mt-4 flex items-end justify-between text-sm">
+        <div>
+          <p className="text-xs text-[#8b90b0]">Stok</p>
+          <p className="font-semibold text-[#2b2f5c]">{stock}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-[#8b90b0]">Fiyat</p>
+          <p className="font-semibold text-[#2b2f5c]">
+            {price ? `${price.toFixed(2)}₺` : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between text-xs text-[#8b90b0]">
+        <span>Adet</span>
+        <span>Toplam Fiyat: {total ? `${total.toFixed(2)}₺` : "—"}</span>
+      </div>
+      <div className="mt-1.5 flex items-center overflow-hidden rounded-lg border border-[#eceef8]">
+        <button
+          type="button"
+          className="h-9 w-10 text-lg text-[#2b2f5c]"
+          onClick={() => setQty((n) => Math.max(1, n - 1))}
+          aria-label="Azalt"
+        >
+          −
+        </button>
+        <input
+          className="h-9 min-w-0 flex-1 border-x border-[#eceef8] text-center text-sm font-medium text-[#2b2f5c] outline-none"
+          value={qty}
+          onChange={(e) => {
+            const n = Number(e.target.value.replace(/\D/g, ""));
+            setQty(Number.isFinite(n) && n > 0 ? Math.min(n, 20) : 1);
+          }}
+          inputMode="numeric"
+          aria-label="Adet"
+        />
+        <button
+          type="button"
+          className="h-9 w-10 text-lg text-[#2b2f5c]"
+          onClick={() => setQty((n) => Math.min(20, n + 1))}
+          aria-label="Arttır"
+        >
+          +
+        </button>
+      </div>
+
+      <button
+        type="button"
+        disabled={!canBuy || busy}
+        onClick={() => {
+          if (!country || !service) return;
+          void onBuy({ country, service, qty });
+        }}
+        className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3d4dff] text-sm font-semibold text-white hover:bg-[#3240e6] disabled:opacity-50"
+      >
+        <ShoppingCart className="size-4" />
+        {busy ? "Alınıyor…" : "Satın Al"}
+      </button>
+    </article>
+  );
+}
 
 export function SmsBuyTable() {
   const router = useRouter();
-  const { buy, balance } = useStore();
+  const { buy } = useStore();
   const [query, setQuery] = useState("");
-  const [country, setCountry] = useState("all");
   const [platforms, setPlatforms] = useState<PlatformSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -44,187 +207,81 @@ export function SmsBuyTable() {
     };
   }, []);
 
-  const countries = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of platforms ?? []) {
-      for (const c of p.countries) {
-        if (!map.has(c.code)) map.set(c.code, c.name);
-      }
-    }
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "tr"));
-  }, [platforms]);
-
   const items = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("tr");
     return (platforms ?? [])
       .filter((p) => {
-        const textOk =
+        return (
           !q ||
           p.name.toLocaleLowerCase("tr").includes(q) ||
-          p.code.toLocaleLowerCase("tr").includes(q);
-        const countryOk =
-          country === "all" ||
-          p.countries.some((c) => c.code === country && c.stock > 0);
-        return textOk && countryOk;
+          p.code.toLocaleLowerCase("tr").includes(q)
+        );
       })
       .sort((a, b) => b.stock - a.stock || a.name.localeCompare(b.name, "tr"));
-  }, [platforms, query, country]);
+  }, [platforms, query]);
 
-  function rowCountry(platform: PlatformSummary) {
-    const chosen = picked[platform.code];
-    if (chosen) {
-      return platform.countries.find((c) => c.code === chosen) ?? platform.countries[0];
+  async function onBuy(
+    platform: PlatformSummary,
+    country: CountrySummary,
+    service: ServiceOption,
+    qty: number,
+  ) {
+    setBusyKey(platform.code);
+    let last = null;
+    for (let i = 0; i < qty; i += 1) {
+      last = await buy({
+        platform: platform.code,
+        country: country.code,
+        service: service.code,
+        platformName: platform.name,
+        countryName: country.name,
+      });
+      if (!last) break;
     }
-    if (country !== "all") {
-      return (
-        platform.countries.find((c) => c.code === country) ?? platform.countries[0]
-      );
-    }
-    return platform.countries.find((c) => c.stock > 0) ?? platform.countries[0];
-  }
-
-  async function onBuy(platform: PlatformSummary) {
-    const c = rowCountry(platform);
-    const best = c?.best;
-    if (!c || !best) return;
-    setBusyId(platform.code);
-    const rental = await buy({
-      platform: platform.code,
-      country: c.code,
-      service: best.code,
-      platformName: platform.name,
-      countryName: c.name,
-    });
-    setBusyId(null);
-    if (rental) router.push(`/gelen-kutusu?hat=${encodeURIComponent(rental.id)}`);
+    setBusyKey(null);
+    if (last) router.push(`/gelen-kutusu?hat=${encodeURIComponent(last.id)}`);
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">SMS Al</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Hizmet ve ülke seç, numarayı al. Hat 24 saat açık kalır, sınırsız SMS
-          Numaralarım’a düşer.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Servis ara (WhatsApp, Telegram…)"
-            className="bg-card pl-8"
-            aria-label="Hizmet ara"
-          />
-        </div>
-        <Select value={country} onValueChange={(v) => setCountry(String(v))}>
-          <SelectTrigger className="w-full bg-card sm:w-52" aria-label="Ülke">
-            <SelectValue placeholder="Tüm ülkeler" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tüm ülkeler</SelectItem>
-            {countries.map(([code, name]) => (
-              <SelectItem key={code} value={code}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div>
+      <div className="relative mb-5">
+        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8b90b0]" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Platform Ara"
+          className="h-11 rounded-xl border-none bg-white pl-10 shadow-[0_8px_24px_rgba(40,44,90,0.05)]"
+          aria-label="Platform Ara"
+        />
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-dashed bg-card px-6 py-12 text-center">
-          <p className="font-medium">Liste alınamadı</p>
-          <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+        <div className="rounded-2xl bg-white px-6 py-16 text-center shadow-[0_8px_24px_rgba(40,44,90,0.06)]">
+          <p className="font-semibold text-[#2b2f5c]">Liste alınamadı</p>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-[#8b90b0]">{error}</p>
         </div>
       ) : platforms == null ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 rounded-xl" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="h-[360px] animate-pulse rounded-2xl bg-white" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-dashed bg-card px-6 py-16 text-center">
-          <p className="font-medium">Eşleşen servis yok</p>
+        <div className="rounded-2xl bg-white px-6 py-16 text-center">
+          <p className="font-medium text-[#2b2f5c]">Eşleşen platform yok</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Servis</th>
-                <th className="px-4 py-3 font-medium">Ülke</th>
-                <th className="px-4 py-3 font-medium">Stok</th>
-                <th className="px-4 py-3 font-medium">Fiyat</th>
-                <th className="px-4 py-3 font-medium">İşlem</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((platform) => {
-                const c = rowCountry(platform);
-                const price = c?.best?.price ?? null;
-                const stock = c?.stock ?? 0;
-                const canPay =
-                  c?.best != null &&
-                  stock > 0 &&
-                  price != null &&
-                  (balance == null || balance >= price);
-                return (
-                  <tr key={platform.code} className="border-b last:border-0">
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <ServiceMark
-                          slug={platform.code}
-                          name={platform.name}
-                          className="size-8 text-[11px]"
-                        />
-                        <span className="font-medium">{platform.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Select
-                        value={c?.code ?? ""}
-                        onValueChange={(v) =>
-                          setPicked((prev) => ({ ...prev, [platform.code]: String(v) }))
-                        }
-                      >
-                        <SelectTrigger className="h-8 w-44" aria-label={`${platform.name} ülke`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {platform.countries.map((item) => (
-                            <SelectItem
-                              key={item.code}
-                              value={item.code}
-                              disabled={item.stock === 0}
-                            >
-                              {item.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-4 py-2.5 tabular-nums">{stock}</td>
-                    <td className="px-4 py-2.5 font-medium text-primary">
-                      {price != null ? formatTL(price) : "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Button
-                        size="sm"
-                        disabled={!canPay || busyId === platform.code}
-                        onClick={() => void onBuy(platform)}
-                      >
-                        {busyId === platform.code ? "Alınıyor…" : "Satın Al"}
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {items.map((platform) => (
+            <PlatformCard
+              key={platform.code}
+              platform={platform}
+              busy={busyKey === platform.code}
+              onBuy={({ country, service, qty }) =>
+                onBuy(platform, country, service, qty)
+              }
+            />
+          ))}
         </div>
       )}
     </div>

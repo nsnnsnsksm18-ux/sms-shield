@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Geist_Mono } from "next/font/google";
-import { PanelShell } from "@/components/panel-shell";
+import { ShopShell } from "@/components/shop-shell";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <Providers>
-          <PanelShell>{children}</PanelShell>
+          <ShopShell>{children}</ShopShell>
         </Providers>
       </body>
     </html>

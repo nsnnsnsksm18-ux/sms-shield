@@ -61,9 +61,15 @@ async function ferpay<T>(
       "Content-Type": "application/json",
       Authorization: token(),
       "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
       Origin: "https://ferpay.com.tr",
       Referer: "https://ferpay.com.tr/",
+      "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+      "sec-ch-ua": '"Chromium";v="128", "Not;A=Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-site",
       ...init.headers,
     },
   });
@@ -71,7 +77,7 @@ async function ferpay<T>(
   const text = await res.text();
   if (text.includes("Just a moment") || res.status === 403) {
     throw new FerPayError(
-      "FerPay Cloudflare doğrulaması istekleri kesti. Vercel veya kendi sunucundan dene.",
+      "FerPay şu an Vercel sunucusundan liste vermiyor (Cloudflare). FERPAY_TOKEN’ın Value kutusunda olduğundan emin ol; sonra Vercel’de Redeploy et.",
       403,
       "cloudflare",
     );
@@ -226,6 +232,13 @@ export function platformSummary(platform: FerPayPlatform) {
         alpha2: country.alpha2 ?? "",
         stock: countryStock(country),
         best: best ? { ...best, price: sellPrice(best.price) } : null,
+        services: Object.entries(country.pricing ?? {})
+          .map(([code, info]) => ({
+            code,
+            price: sellPrice(info.price),
+            count: info.count ?? 0,
+          }))
+          .sort((a, b) => a.price - b.price),
       };
     }),
   };

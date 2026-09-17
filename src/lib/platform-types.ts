@@ -10,6 +10,7 @@ export type CountrySummary = {
   alpha2: string;
   stock: number;
   best: ServiceOption | null;
+  services: ServiceOption[];
 };
 
 export type PlatformSummary = {
