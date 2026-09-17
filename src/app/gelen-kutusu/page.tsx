@@ -3,19 +3,17 @@ import { Suspense } from "react";
 import { InboxClient } from "@/components/inbox-client";
 
 export const metadata: Metadata = {
-  title: "Gelen kutusu",
+  title: "Numaralarım",
   description: "Aldığın numaralara 24 saat boyunca gelen SMS’leri görüntüle.",
 };
 
 export default function InboxPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="font-heading text-3xl font-semibold tracking-tight">
-        Gelen kutusu
-      </h1>
-      <p className="mt-2 mb-8 max-w-2xl text-sm text-muted-foreground">
-        Aldığın hat 24 saat açık kalır. Gelen her SMS burada birikir; tek
-        kodda durmaz. FerPay 5 saniyede bir sorgulanır.
+    <div>
+      <h1 className="text-xl font-semibold">Numaralarım</h1>
+      <p className="mt-1 mb-6 max-w-2xl text-sm text-muted-foreground">
+        Hat 24 saat açık. Gelen her SMS burada birikir. FerPay 5 saniyede bir
+        sorgulanır.
       </p>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Yükleniyor…</p>}>
         <InboxClient />

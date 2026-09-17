@@ -9,30 +9,20 @@ export const metadata: Metadata = {
 
 export default function HowPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="font-heading text-3xl font-semibold tracking-tight">
-        Nasıl çalışır
-      </h1>
-      <p className="mt-3 text-muted-foreground leading-7">
-        hizlismsal.com, FerPay stoğunu gösterir. Hizmet seçince sunucu
-        FerPay’den numara alır. Kiralama yok: hat 24 saat senindir, o süre
-        boyunca sınırsız SMS gelen kutuya yazılır.
+    <div className="max-w-2xl rounded-xl border bg-card p-6">
+      <h1 className="text-xl font-semibold">Nasıl çalışır</h1>
+      <p className="mt-3 text-sm leading-7 text-muted-foreground">
+        SMS Al’den hizmet ve ülke seç, Satın Al’a bas. Numara 24 saat senindir;
+        gelen her SMS Numaralarım’da birikir. Tek kullanımlık değil.
       </p>
-      <ol className="mt-8 list-decimal space-y-3 pl-5 text-sm leading-6">
+      <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm leading-6">
         <li>ferpay.com.tr’de bakiye yükle.</li>
-        <li>Hizmet ve ülke seç, numarayı al (bakiyen FerPay’den düşer).</li>
-        <li>Numarayı hedef uygulamaya yaz. Hat 24 saat açık kalır.</li>
-        <li>
-          Gelen her SMS burada birikir; tek kullanımlık değil. İlk SMS
-          gelmezse iptal et, iade FerPay’de olur.
-        </li>
+        <li>SMS Al’den servis seç, Satın Al.</li>
+        <li>Numarayı uygulamaya yaz. Hat 24 saat açık kalır.</li>
+        <li>SMS’ler Numaralarım’da durur. İlk SMS gelmezse iptal et, iade olur.</li>
       </ol>
-      <p className="mt-8 text-sm text-muted-foreground leading-6">
-        Token sadece sunucuda durur (`FERPAY_TOKEN`). Tarayıcıya verilmez.
-        Domain’i Vercel’e bağlayınca canlı adres hizlismsal.com olur.
-      </p>
-      <Link href="/hizmetler" className={cn(buttonVariants(), "mt-8")}>
-        Hizmetlere git
+      <Link href="/" className={cn(buttonVariants(), "mt-6")}>
+        SMS Al
       </Link>
     </div>
   );

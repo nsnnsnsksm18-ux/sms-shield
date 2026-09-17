@@ -17,16 +17,16 @@ import { cn } from "@/lib/utils";
 
 function statusMeta(rental: LiveRental, now: number) {
   if (rental.status === "banned") {
-    return { label: "İptal", className: "bg-white/8 text-muted-foreground" };
+    return { label: "İptal", className: "bg-muted text-muted-foreground" };
   }
   if (now && !isRentalLive(rental, now)) {
-    return { label: "24 saat doldu", className: "bg-white/8 text-muted-foreground" };
+    return { label: "24 saat doldu", className: "bg-muted text-muted-foreground" };
   }
   if (rental.messages.length > 0) {
-    return { label: "Aktif · SMS geliyor", className: "bg-teal-400/15 text-teal-200" };
+    return { label: "Aktif · SMS geliyor", className: "bg-emerald-100 text-emerald-800" };
   }
   if (rental.status === "received") {
-    return { label: "SMS bekleniyor", className: "bg-amber-400/15 text-amber-200" };
+    return { label: "SMS bekleniyor", className: "bg-amber-100 text-amber-800" };
   }
   return { label: rental.status || "Bitti", className: "bg-white/8 text-muted-foreground" };
 }
@@ -58,7 +58,7 @@ export function InboxClient() {
 
   if (rentals.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/12 px-6 py-20 text-center">
+      <div className="rounded-xl border border-dashed bg-card px-6 py-16 text-center">
         <Inbox className="mx-auto mb-3 size-8 text-muted-foreground" />
         <p className="font-heading text-lg font-medium">Henüz numara yok</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
@@ -83,8 +83,8 @@ export function InboxClient() {
               router.replace(`/gelen-kutusu?hat=${encodeURIComponent(rental.id)}`)
             }
             className={cn(
-              "rounded-xl border border-transparent bg-card/50 p-3 text-left ring-1 ring-white/8 transition-colors",
-              selected?.id === rental.id && "border-primary/40 bg-card ring-primary/30",
+              "rounded-xl border bg-card p-3 text-left transition-colors",
+              selected?.id === rental.id && "border-primary ring-1 ring-primary/30",
             )}
           >
             <div className="flex items-center gap-2">
@@ -158,7 +158,7 @@ function RentalPane({
             : `24 saat doldu · ${formatTL(rental.price)}`}
         </div>
         {waiting && (
-          <div className="flex items-center gap-3 rounded-xl border border-dashed border-primary/25 bg-primary/6 px-4 py-5">
+          <div className="flex items-center gap-3 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-5">
             <Loader2 className="size-5 animate-spin text-primary" />
             <div>
               <p className="text-sm font-medium">İlk SMS bekleniyor</p>
@@ -183,7 +183,7 @@ function RentalPane({
                 <li
                   key={`${rental.id}-${rental.messages.length - index}-${text.slice(0, 24)}`}
                   className={cn(
-                    "rounded-2xl bg-white/5 p-4",
+                    "rounded-xl border bg-muted/40 p-4",
                     newest && "ring-1 ring-primary/25",
                   )}
                 >

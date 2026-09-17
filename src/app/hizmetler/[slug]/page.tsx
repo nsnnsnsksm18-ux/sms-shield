@@ -20,7 +20,7 @@ export default async function ServicePage({
 }) {
   const { slug } = await params;
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto max-w-5xl">
       <Link
         href="/hizmetler"
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-6")}

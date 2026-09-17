@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-import { Catalog } from "@/components/catalog";
+import { SmsBuyTable } from "@/components/sms-buy-table";
 
 export const metadata: Metadata = {
-  title: "Hizmetler",
+  title: "SMS Al",
   description: "WhatsApp, Telegram, Instagram ve diğer platformlar için 24 saatlik sanal numara.",
 };
 
 export default function HizmetlerPage() {
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <Catalog heading="Numara alabileceğin hizmetler" />
-    </div>
-  );
+  return <SmsBuyTable />;
 }

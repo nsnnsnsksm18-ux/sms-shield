@@ -9,7 +9,7 @@ export function Logo({
   compact?: boolean;
 }) {
   return (
-    <Link href="/" className={cn("flex items-center gap-2.5", className)}>
+    <Link href="/" className={cn("flex items-center gap-2.5 text-inherit", className)}>
       <span className="relative flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_0_24px_color-mix(in_oklch,var(--primary)_45%,transparent)]">
         <svg viewBox="0 0 24 24" className="size-4.5" fill="none" aria-hidden>
           <path

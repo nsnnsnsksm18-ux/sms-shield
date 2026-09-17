@@ -106,17 +106,17 @@ export function ServiceRent({ platformCode }: { platformCode: string }) {
           </div>
         </div>
         <ul className="mt-8 grid gap-3 sm:grid-cols-3">
-          <li className="rounded-xl border border-white/8 bg-card/60 p-4">
+          <li className="rounded-xl border bg-card p-4">
             <Clock className="mb-2 size-4 text-primary" />
             <p className="text-sm font-medium">24 saat açık</p>
             <p className="text-xs text-muted-foreground">Hat kapanana kadar sınırsız SMS</p>
           </li>
-          <li className="rounded-xl border border-white/8 bg-card/60 p-4">
+          <li className="rounded-xl border bg-card p-4">
             <Globe className="mb-2 size-4 text-primary" />
             <p className="text-sm font-medium">{stock} hazır hat</p>
             <p className="text-xs text-muted-foreground">{country?.name ?? "Ülke seç"}</p>
           </li>
-          <li className="rounded-xl border border-white/8 bg-card/60 p-4">
+          <li className="rounded-xl border bg-card p-4">
             <ShieldAlert className="mb-2 size-4 text-primary" />
             <p className="text-sm font-medium">Sınırsız SMS</p>
             <p className="text-xs text-muted-foreground">5 sn’de bir tüm gelenler çekilir</p>
@@ -157,10 +157,10 @@ export function ServiceRent({ platformCode }: { platformCode: string }) {
             FerPay bakiyen: {balance == null ? "…" : formatTL(balance)}
           </p>
           {stock === 0 && (
-            <p className="text-sm text-amber-300">Bu ülkede stok yok.</p>
+            <p className="text-sm text-amber-700">Bu ülkede stok yok.</p>
           )}
           {best && balance != null && price != null && balance < price && (
-            <p className="text-sm text-amber-300">
+            <p className="text-sm text-amber-700">
               Bakiye yetmiyor. ferpay.com.tr üzerinden yükle.
             </p>
           )}
