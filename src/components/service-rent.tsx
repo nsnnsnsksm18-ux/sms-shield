@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Clock, Globe, ShieldAlert } from "lucide-react";
 import { ServiceMark } from "@/components/service-mark";
 import { Badge } from "@/components/ui/badge";
@@ -14,53 +14,111 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { COUNTRIES, priceFor, stockFor } from "@/lib/data";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatTL } from "@/lib/format";
+import type { PlatformSummary } from "@/lib/platform-types";
 import { useStore } from "@/lib/store";
-import type { Service } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function ServiceRent({ service }: { service: Service }) {
+export function ServiceRent({ platformCode }: { platformCode: string }) {
   const router = useRouter();
-  const { rent, balance } = useStore();
-  const [countryCode, setCountryCode] = useState("TR");
-  const country = COUNTRIES.find((c) => c.code === countryCode) ?? COUNTRIES[0];
-  const price = priceFor(service, country);
-  const stock = stockFor(service.slug, country.code);
-  const canPay = balance >= price;
+  const { buy, balance } = useStore();
+  const [platform, setPlatform] = useState<PlatformSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string>("");
+  const [busy, setBusy] = useState(false);
 
-  function onRent() {
-    const rental = rent(service.slug, country.code);
-    if (rental) router.push(`/gelen-kutusu?hat=${rental.id}`);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/platforms")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Liste alınamadı");
+        const found = (data.platforms as PlatformSummary[]).find(
+          (p) => p.code === platformCode,
+        );
+        if (!found) throw new Error("Bu hizmet FerPay’de yok");
+        if (!alive) return;
+        setPlatform(found);
+        const first = found.countries.find((c) => c.stock > 0) ?? found.countries[0];
+        if (first) setCountryCode(first.code);
+      })
+      .catch((err: Error) => {
+        if (alive) setError(err.message);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [platformCode]);
+
+  const country = useMemo(
+    () => platform?.countries.find((c) => c.code === countryCode),
+    [platform, countryCode],
+  );
+  const best = country?.best ?? null;
+  const price = best?.price ?? null;
+  const stock = country?.stock ?? 0;
+  const canPay =
+    best != null &&
+    stock > 0 &&
+    price != null &&
+    (balance == null || balance >= price);
+
+  async function onRent() {
+    if (!platform || !country || !best) return;
+    setBusy(true);
+    const rental = await buy({
+      platform: platform.code,
+      country: country.code,
+      service: best.code,
+      platformName: platform.name,
+      countryName: country.name,
+    });
+    setBusy(false);
+    if (rental) router.push(`/gelen-kutusu?hat=${encodeURIComponent(rental.id)}`);
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-dashed px-6 py-16 text-center">
+        <p className="font-medium">{error}</p>
+      </div>
+    );
+  }
+
+  if (!platform) {
+    return <Skeleton className="h-64 rounded-2xl" />;
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <div>
         <div className="flex items-start gap-4">
-          <ServiceMark slug={service.slug} name={service.name} className="size-14 text-lg" />
+          <ServiceMark slug={platform.code} name={platform.name} className="size-14 text-lg" />
           <div>
             <h1 className="font-heading text-3xl font-semibold tracking-tight">
-              {service.name} SMS onay
+              {platform.name} SMS onay
             </h1>
-            <p className="mt-2 max-w-xl text-muted-foreground">{service.blurb}</p>
+            <p className="mt-2 max-w-xl text-muted-foreground">
+              Numara FerPay üzerinden kiralanır. Gelen SMS bu sitedeki kutuya düşer.
+            </p>
           </div>
         </div>
         <ul className="mt-8 grid gap-3 sm:grid-cols-3">
           <li className="rounded-xl border border-white/8 bg-card/60 p-4">
             <Clock className="mb-2 size-4 text-primary" />
-            <p className="text-sm font-medium">15 dakika</p>
-            <p className="text-xs text-muted-foreground">Kiralama süresi</p>
+            <p className="text-sm font-medium">Süre FerPay’den</p>
+            <p className="text-xs text-muted-foreground">Siparişin expiresAt değeri</p>
           </li>
           <li className="rounded-xl border border-white/8 bg-card/60 p-4">
             <Globe className="mb-2 size-4 text-primary" />
             <p className="text-sm font-medium">{stock} hazır hat</p>
-            <p className="text-xs text-muted-foreground">{country.name}</p>
+            <p className="text-xs text-muted-foreground">{country?.name ?? "Ülke seç"}</p>
           </li>
           <li className="rounded-xl border border-white/8 bg-card/60 p-4">
             <ShieldAlert className="mb-2 size-4 text-primary" />
-            <p className="text-sm font-medium">Demo kod</p>
-            <p className="text-xs text-muted-foreground">4–9 sn içinde simüle</p>
+            <p className="text-sm font-medium">Canlı SMS</p>
+            <p className="text-xs text-muted-foreground">Kod 4–5 sn aralıkla sorgulanır</p>
           </li>
         </ul>
       </div>
@@ -76,9 +134,10 @@ export function ServiceRent({ service }: { service: Service }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {COUNTRIES.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.flag} {c.name} · {formatTL(priceFor(service, c))}
+                {platform.countries.map((c) => (
+                  <SelectItem key={c.code} value={c.code} disabled={c.stock === 0}>
+                    {c.name} · {c.stock} stok
+                    {c.best ? ` · ${formatTL(c.best.price)}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -88,19 +147,20 @@ export function ServiceRent({ service }: { service: Service }) {
             <div>
               <p className="text-xs text-muted-foreground">Tutar</p>
               <p className="font-heading text-2xl font-semibold text-primary">
-                {formatTL(price)}
+                {price != null ? formatTL(price) : "—"}
               </p>
             </div>
-            <Badge variant={stock > 20 ? "secondary" : "outline"}>
-              {stock} stok
-            </Badge>
+            <Badge variant={stock > 0 ? "secondary" : "outline"}>{stock} stok</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Bakiyeniz: <span suppressHydrationWarning>{formatTL(balance)}</span>
+            FerPay bakiyen: {balance == null ? "…" : formatTL(balance)}
           </p>
-          {!canPay && (
+          {stock === 0 && (
+            <p className="text-sm text-amber-300">Bu ülkede stok yok.</p>
+          )}
+          {best && balance != null && price != null && balance < price && (
             <p className="text-sm text-amber-300">
-              Bu hat için bakiyeniz yetmiyor. Cüzdandan demo yükleme yapın.
+              Bakiye yetmiyor. ferpay.com.tr üzerinden yükle.
             </p>
           )}
           <button
@@ -108,13 +168,13 @@ export function ServiceRent({ service }: { service: Service }) {
             data-testid="rent-btn"
             className={cn(buttonVariants({ size: "lg" }), "w-full")}
             onClick={onRent}
-            disabled={!canPay}
+            disabled={!canPay || busy}
           >
-            Numarayı kirala
+            {busy ? "Alınıyor…" : "Numarayı kirala"}
           </button>
           <p className="text-xs leading-5 text-muted-foreground">
-            Kod gelmezse süre dolmadan iptal edebilirsiniz; tutarın %70’i
-            iade edilir. Gerçek SMS bu demoda gönderilmez.
+            Tıklayınca FerPay bakiyenden düşer. SMS gelmezse gelen kutusundan
+            iptal et; FerPay iade eder.
           </p>
         </CardContent>
       </Card>

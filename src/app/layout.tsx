@@ -17,11 +17,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SMSOnay — Sanal numara ile SMS doğrulama",
-    template: "%s · SMSOnay",
+    default: "Hızlı SMS Al — hizlismsal.com",
+    template: "%s · Hızlı SMS Al",
   },
   description:
-    "WhatsApp, Telegram, Instagram ve diğer hizmetler için sanal numara kiralayıp SMS onay kodunu anında alın. Demo pazaryeri.",
+    "Sanal numara ile SMS onay. Stok ve numaralar FerPay üzerinden alınır.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

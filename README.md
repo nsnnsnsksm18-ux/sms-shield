@@ -1,48 +1,40 @@
-# SMSOnay
+# Hızlı SMS Al (hizlismsal.com)
 
-Sanal numara ile SMS doğrulama kodu alan bir pazaryeri demosu. WhatsApp, Telegram, Instagram ve benzeri hizmetler için ülke seçip 15 dakikalık hat kiralarsınız; kod gelen kutusuna düşer.
+FerPay API’sine bağlı sanal numara / SMS onay vitrini.
 
-Bu sürüm **gerçek SMS göndermez**. Numaralar ve kodlar tarayıcıda simüle edilir, bakiye `localStorage` içinde tutulur. Canlı operatör, ödeme veya üyelik yoktur.
+## Gizli anahtar
 
-## Yerelde çalıştırma
+Token’ı sohbete veya Git’e koyma. `.env.local`:
 
-Node 20+ gerekir.
+```
+FERPAY_API_BASE=https://api.ferpay.com.tr/api
+FERPAY_TOKEN=...
+FERPAY_MARKUP=1
+```
+
+Vercel’de aynı değişkenleri Environment Variables olarak ekle.
+
+## Çalıştırma
 
 ```bash
 npm install
 npm run dev
 ```
 
-Tarayıcıda [http://localhost:43147](http://localhost:43147) açın.
+http://localhost:43147
 
-Üretim derlemesi:
+Üretim:
 
 ```bash
 npm run build
 npm start
 ```
 
-## Demo akışı
+## Akış
 
-1. Ana sayfadan veya **Hizmetler**’den bir platform seçin.
-2. Ülke ve fiyatı görün, **Numarayı kirala** deyin (başlangıç bakiyesi 150 ₺).
-3. **Gelen kutusu**nda 4–9 saniye içinde sahte SMS ve 6 haneli kod gelir.
-4. Bakiye yetmezse **Cüzdan**’dan demo paket yükleyin.
+1. ferpay.com.tr bakiyesi
+2. Hizmet + ülke → `POST /api/sms/v1/buy`
+3. Gelen kutusu `GET /api/sms/v1/transactions/{id}` (5 sn)
+4. İptal `DELETE /api/sms/v1/buy/{id}/cancel`
 
-## Canlı site için ne lazım?
-
-Arayüz bu repoda. Gerçek hizmet için ayrıca:
-
-| Parça | Ne işe yarar |
-| --- | --- |
-| Numara API’si | Twilio, Telnyx veya toptan sanal numara sağlayıcısı. Gelen SMS webhook ile sunucuya düşer. |
-| Ödeme | Türkiye’de iyzico / PayTR, cüzdan ve fatura. |
-| Hesap | Üyelik, sipariş geçmişi, isteğe bağlı toptan API. |
-| Yasal | KVKK, kullanım şartları, yasaklı kullanım (dolandırıcılık, başkasının 2FA’sı, spam). |
-| Hosting | Bu Next.js uygulaması Vercel’de çalışır; SMS webhook için sunucu tarafı route gerekir. |
-
-Bazı platformlar sanal numarayı reddeder. Kullanımı platform kurallarına ve yasalara aykırı amaçlar için tasarlamayın.
-
-## Teknoloji
-
-Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui.
+Bazı ağlarda FerPay Cloudflare 403 dönebilir; Vercel çıkışı genelde geçer.

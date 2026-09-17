@@ -12,25 +12,13 @@ export default function LegalPage() {
       </h1>
       <div className="mt-6 space-y-4 text-sm leading-7 text-muted-foreground">
         <p>
-          SMSOnay bu depoda bir ürün demosudur. Gerçek telefon numarası
-          kiralanmaz, gerçek SMS iletilmez, ödeme alınmaz. Kodlar rastgele
-          üretilir.
+          Numaralar üçüncü taraf FerPay altyapısından kiralanır. Markalar
+          (WhatsApp, Telegram, Instagram vb.) ilgili şirketlere aittir.
         </p>
         <p>
-          Canlı bir SMS onay hizmeti işletmek istiyorsanız geçerli mevzuata,
-          KVKK’ya ve ödeme kuruluşu kurallarına uymanız gerekir. Kullanıcıların
-          başkasının hesabına izinsiz girmek, dolandırıcılık, spam veya bir
-          platformun güvenlik önlemlerini aşmak için sanal numara kullanması
+          Başkasının hesabına izinsiz girmek, dolandırıcılık, spam veya bir
+          platformun güvenlik önlemlerini aşmak için sanal numara kullanmak
           yasaktır.
-        </p>
-        <p>
-          WhatsApp, Telegram, Instagram ve diğer markalar ilgili şirketlere
-          aittir. Bu demo onlarla bağlantılı değildir ve onların onayını
-          ima etmez.
-        </p>
-        <p>
-          Kişisel veri bu demoda sunucuya gitmez; bakiye ve kiralamalar yalnızca
-          tarayıcınızdaki localStorage’da tutulur.
         </p>
       </div>
     </div>

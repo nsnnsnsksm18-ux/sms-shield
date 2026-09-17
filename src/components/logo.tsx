@@ -25,7 +25,7 @@ export function Logo({
       </span>
       {!compact && (
         <span className="font-heading text-[15px] font-semibold tracking-tight">
-          SMSOnay
+          SMSAl
         </span>
       )}
     </Link>

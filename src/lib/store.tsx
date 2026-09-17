@@ -6,108 +6,71 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 import { toast } from "sonner";
-import {
-  generatePhone,
-  getCountry,
-  getService,
-  priceFor,
-  senderFor,
-  smsFor,
-} from "@/lib/data";
-import { id, otp } from "@/lib/format";
-import type { Rental, StoreState, Transaction } from "@/lib/types";
+import { extractCode, normalizeMessage } from "@/lib/ferpay-display";
 
-const KEY = "smsonay-demo-v1";
-const RENTAL_MS = 15 * 60 * 1000;
-const START_BALANCE = 150;
+const KEY = "hizlismsal-rentals-v1";
 
-const emptyState: StoreState = {
-  balance: START_BALANCE,
-  rentals: [],
-  transactions: [
-    {
-      id: "tx_welcome",
-      type: "topup",
-      amount: START_BALANCE,
-      note: "Demo bakiyesi",
-      createdAt: Date.UTC(2026, 0, 1),
-    },
-  ],
+export type LiveRental = {
+  id: string;
+  phone: string;
+  platform: string;
+  platformCode: string;
+  country: string;
+  countryCode: string;
+  price: number;
+  status: string;
+  expiresAt: number;
+  createdAt: number;
+  message: string;
+  code: string | null;
 };
 
-type Store = StoreState & {
-  rent: (serviceSlug: string, countryCode: string) => Rental | null;
-  cancel: (rentalId: string) => void;
-  topUp: (amount: number, bonus: number, label: string) => void;
-  resetDemo: () => void;
+type Store = {
+  balance: number | null;
+  error: string | null;
+  rentals: LiveRental[];
+  refreshMe: () => Promise<void>;
+  buy: (input: {
+    platform: string;
+    country: string;
+    service: string;
+    platformName: string;
+    countryName: string;
+  }) => Promise<LiveRental | null>;
+  cancel: (id: string) => Promise<void>;
+  refreshRental: (id: string) => Promise<void>;
 };
 
-const StoreContext = createContext<Store | null>(null);
+const Ctx = createContext<Store | null>(null);
 
-function tick(state: StoreState): StoreState {
-  const now = Date.now();
-  let changed = false;
-  const rentals = state.rentals.map((rental) => {
-    if (rental.status === "waiting" && now >= rental.expiresAt) {
-      changed = true;
-      return { ...rental, status: "expired" as const };
-    }
-    if (
-      rental.status === "waiting" &&
-      now >= rental.deliverAt &&
-      rental.messages.length === 0
-    ) {
-      const service = getService(rental.serviceSlug);
-      if (!service) return rental;
-      const code = otp();
-      changed = true;
-      return {
-        ...rental,
-        status: "received" as const,
-        messages: [
-          {
-            id: id("sms"),
-            from: senderFor(service),
-            body: smsFor(service, code),
-            code,
-            receivedAt: now,
-          },
-        ],
-      };
-    }
-    return rental;
-  });
-  return changed ? { ...state, rentals } : state;
+function readDisk(): LiveRental[] {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? (JSON.parse(raw) as LiveRental[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 const listeners = new Set<() => void>();
-let memory: StoreState = emptyState;
-
-function emit() {
-  for (const listener of listeners) listener();
-}
-
-function readDisk(): StoreState {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return tick(JSON.parse(raw) as StoreState);
-  } catch {
-    /* ignore */
-  }
-  return emptyState;
-}
+let memory: LiveRental[] = [];
 
 if (typeof window !== "undefined") {
   memory = readDisk();
 }
 
-function persist(next: StoreState) {
-  memory = next;
+function emit() {
+  for (const listener of listeners) listener();
+}
+
+function persist(next: LiveRental[]) {
+  memory = next.slice(0, 40);
   try {
-    localStorage.setItem(KEY, JSON.stringify(next));
+    localStorage.setItem(KEY, JSON.stringify(memory));
   } catch {
     /* ignore */
   }
@@ -119,143 +82,170 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-function getSnapshot() {
-  return memory;
-}
-
-function getServerSnapshot() {
-  return emptyState;
+async function json<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init);
+  const data = (await res.json()) as T & { error?: string };
+  if (!res.ok) throw new Error(data.error || "İstek başarısız");
+  return data;
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      const next = tick(memory);
-      if (next !== memory) persist(next);
-    }, 400);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const rent = useCallback(
-    (serviceSlug: string, countryCode: string) => {
-      const service = getService(serviceSlug);
-      const country = getCountry(countryCode);
-      if (!service || !country) {
-        toast.error("Hizmet veya ülke bulunamadı.");
-        return null;
-      }
-      const price = priceFor(service, country);
-      if (memory.balance < price) {
-        toast.error("Yetersiz bakiye. Cüzdana bakın.");
-        return null;
-      }
-      const now = Date.now();
-      const created: Rental = {
-        id: id("hat"),
-        serviceSlug,
-        countryCode,
-        phone: generatePhone(country),
-        price,
-        status: "waiting",
-        createdAt: now,
-        expiresAt: now + RENTAL_MS,
-        deliverAt: now + 4500 + Math.floor(Math.random() * 5000),
-        messages: [],
-      };
-      const tx: Transaction = {
-        id: id("tx"),
-        type: "rent",
-        amount: -price,
-        note: `${service.name} · ${country.name}`,
-        createdAt: now,
-      };
-      persist({
-        ...memory,
-        balance: Math.round((memory.balance - price) * 100) / 100,
-        rentals: [created, ...memory.rentals],
-        transactions: [tx, ...memory.transactions],
-      });
-      toast.success(`${country.flag} ${created.phone} kiralandı`);
-      return created;
-    },
-    [],
+  const [balance, setBalance] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const rentals = useSyncExternalStore(
+    subscribe,
+    () => memory,
+    () => [] as LiveRental[],
   );
 
-  const cancel = useCallback((rentalId: string) => {
-    const rental = memory.rentals.find((item) => item.id === rentalId);
-    if (!rental || rental.status !== "waiting") {
-      toast.error("Bu hat iptal edilemez.");
-      return;
+  const refreshMe = useCallback(async () => {
+    try {
+      const me = await json<{ balance: number }>("/api/me");
+      setBalance(me.balance);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bakiye alınamadı");
     }
-    const refund = Math.round(rental.price * 0.7 * 100) / 100;
-    persist({
-      ...memory,
-      balance: Math.round((memory.balance + refund) * 100) / 100,
-      rentals: memory.rentals.map((item) =>
-        item.id === rentalId ? { ...item, status: "cancelled" as const } : item,
-      ),
-      transactions: [
-        {
-          id: id("tx"),
-          type: "refund",
-          amount: refund,
-          note: "İptal iadesi · %70",
-          createdAt: Date.now(),
-        },
-        ...memory.transactions,
-      ],
-    });
-    toast.message(`${refund.toFixed(2)} ₺ iade edildi`);
   }, []);
 
-  const topUp = useCallback((amount: number, bonus: number, label: string) => {
-    const total = amount + bonus;
-    persist({
-      ...memory,
-      balance: Math.round((memory.balance + total) * 100) / 100,
-      transactions: [
-        {
-          id: id("tx"),
-          type: "topup",
-          amount: total,
-          note: bonus
-            ? `${label} paket · ${amount} ₺ + ${bonus} ₺ bonus`
-            : `${label} paket`,
-          createdAt: Date.now(),
-        },
-        ...memory.transactions,
-      ],
-    });
-    toast.success(`${total} ₺ yüklendi`);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/me")
+      .then(async (res) => {
+        const data = (await res.json()) as { balance?: number; error?: string };
+        if (!live) return;
+        if (!res.ok) {
+          setError(data.error || "Bakiye alınamadı");
+          return;
+        }
+        setBalance(data.balance ?? 0);
+        setError(null);
+      })
+      .catch(() => {
+        if (live) setError("Bakiye alınamadı");
+      });
+    return () => {
+      live = false;
+    };
   }, []);
 
-  const resetDemo = useCallback(() => {
-    persist({
-      ...emptyState,
-      transactions: [
-        {
-          ...emptyState.transactions[0],
-          createdAt: Date.now(),
-        },
-      ],
-    });
-    toast.message("Demo sıfırlandı");
+  const buy = useCallback<Store["buy"]>(async (input) => {
+    try {
+      const result = await json<{
+        balance?: number;
+        transaction?: {
+          id: string;
+          amount?: number;
+          status?: string;
+          expiresAt?: string;
+          detail?: { phone?: string; platform?: string; message?: unknown };
+        };
+      }>("/api/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: input.platform,
+          country: input.country,
+          service: input.service,
+        }),
+      });
+      const tx = result.transaction;
+      if (!tx?.id) {
+        toast.error("Numara alınamadı");
+        return null;
+      }
+      const message = normalizeMessage(tx.detail?.message);
+      const rental: LiveRental = {
+        id: tx.id,
+        phone: tx.detail?.phone || "—",
+        platform: tx.detail?.platform || input.platformName,
+        platformCode: input.platform,
+        country: input.countryName,
+        countryCode: input.country,
+        price: tx.amount ?? 0,
+        status: tx.status || "received",
+        expiresAt: tx.expiresAt ? Date.parse(tx.expiresAt) : Date.now() + 15 * 60_000,
+        createdAt: Date.now(),
+        message,
+        code: extractCode(message),
+      };
+      persist([rental, ...memory.filter((item) => item.id !== rental.id)]);
+      if (typeof result.balance === "number") setBalance(result.balance);
+      toast.success(`${rental.phone} kiralandı`);
+      return rental;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Alım başarısız");
+      return null;
+    }
+  }, []);
+
+  const refreshRental = useCallback(async (id: string) => {
+    try {
+      const tx = await json<{
+        id: string;
+        status?: string;
+        expiresAt?: string;
+        amount?: number;
+        detail?: { phone?: string; platform?: string; message?: unknown };
+      }>(`/api/transactions/${encodeURIComponent(id)}`);
+      const message = normalizeMessage(tx.detail?.message);
+      persist(
+        memory.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status: tx.status || item.status,
+                phone: tx.detail?.phone || item.phone,
+                platform: tx.detail?.platform || item.platform,
+                expiresAt: tx.expiresAt ? Date.parse(tx.expiresAt) : item.expiresAt,
+                price: tx.amount ?? item.price,
+                message,
+                code: extractCode(message),
+              }
+            : item,
+        ),
+      );
+    } catch {
+      /* keep last snapshot */
+    }
+  }, []);
+
+  const cancel = useCallback(async (id: string) => {
+    try {
+      const result = await json<{ balance?: number; status?: string }>(
+        `/api/buy/${encodeURIComponent(id)}/cancel`,
+        { method: "DELETE" },
+      );
+      persist(
+        memory.map((item) =>
+          item.id === id ? { ...item, status: result.status || "banned" } : item,
+        ),
+      );
+      if (typeof result.balance === "number") setBalance(result.balance);
+      toast.message("Sipariş iptal edildi, bakiye iade edildi");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "İptal edilemedi");
+    }
   }, []);
 
   const value = useMemo<Store>(
-    () => ({ ...state, rent, cancel, topUp, resetDemo }),
-    [state, rent, cancel, topUp, resetDemo],
+    () => ({
+      balance,
+      error,
+      rentals,
+      refreshMe,
+      buy,
+      cancel,
+      refreshRental,
+    }),
+    [balance, error, rentals, refreshMe, buy, cancel, refreshRental],
   );
 
-  return (
-    <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
-  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {
-  const ctx = useContext(StoreContext);
+  const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useStore StoreProvider içinde kullanılmalı");
   return ctx;
 }

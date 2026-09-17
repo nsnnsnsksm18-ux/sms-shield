@@ -14,8 +14,8 @@ export default function InboxPage() {
         Gelen kutusu
       </h1>
       <p className="mt-2 mb-8 max-w-2xl text-sm text-muted-foreground">
-        Aktif hatlar, geri sayım ve gelen kodlar burada. SMS bu demoda
-        simüle edilir.
+        Aktif hatlar ve gelen kodlar burada. SMS FerPay’den 5 saniyede bir
+        çekilir.
       </p>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Yükleniyor…</p>}>
         <InboxClient />

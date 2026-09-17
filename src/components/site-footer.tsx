@@ -8,9 +8,8 @@ export function SiteFooter() {
         <div className="max-w-xs">
           <Logo />
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Demo SMS onay pazaryeri. Kodlar simüle edilir; gerçek operatör
-            hattı bağlanmaz. Canlı kullanım için numara API’si, ödeme ve
-            KVKK gerekir.
+            Numaralar FerPay API’sinden alınır. Bakiye ferpay.com.tr
+            cüzdanındandır. hizlismsal.com için hazırlandı.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8 text-sm">

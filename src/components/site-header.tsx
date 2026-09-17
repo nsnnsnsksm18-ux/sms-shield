@@ -27,7 +27,9 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname();
   const { balance, rentals } = useStore();
-  const waiting = rentals.filter((r) => r.status === "waiting" || r.status === "received").length;
+  const waiting = rentals.filter(
+    (r) => r.status === "received" && !r.message,
+  ).length;
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/8 bg-background/75 backdrop-blur-xl">
@@ -61,7 +63,9 @@ export function SiteHeader() {
             )}
           >
             <Wallet className="size-3.5" />
-            <span suppressHydrationWarning>{formatTL(balance)}</span>
+            <span suppressHydrationWarning>
+              {balance == null ? "…" : formatTL(balance)}
+            </span>
           </Link>
           <Link
             href="/hizmetler"
@@ -97,7 +101,7 @@ export function SiteHeader() {
                   </SheetClose>
                 ))}
                 <p className="mt-3 px-3 text-sm text-muted-foreground">
-                  Bakiye: {formatTL(balance)}
+                  Bakiye: {balance == null ? "…" : formatTL(balance)}
                 </p>
               </div>
             </SheetContent>

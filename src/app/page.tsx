@@ -16,26 +16,26 @@ import { cn } from "@/lib/utils";
 const STEPS = [
   {
     icon: Wallet,
-    title: "Bakiye yükle",
-    text: "Demo cüzdana paket seç. Canlıda burası iyzico / PayTR olur.",
+    title: "FerPay bakiyesi",
+    text: "Bakiyeyi ferpay.com.tr üzerinden yükle. Bu site o cüzdanı kullanır.",
   },
   {
     icon: Globe,
     title: "Hizmet ve ülke seç",
-    text: "WhatsApp, Telegram, Instagram… fiyat ülkeye göre değişir.",
+    text: "WhatsApp, Telegram, Instagram… fiyat ve stok FerPay’den gelir.",
   },
   {
     icon: Smartphone,
     title: "Numarayı al, kodu kopyala",
-    text: "15 dakikalık hat kiralanır. Demo SMS birkaç saniyede gelir.",
+    text: "Kirala, numarayı uygulamaya yaz. SMS gelen kutusuna düşer.",
   },
 ];
 
 const NEED = [
-  "Sanal numara API’si (Twilio, SMS Activate toptan, 5sim…)",
-  "Ödeme (iyzico, PayTR) ve kullanıcı hesabı",
-  "Domain, Vercel veya benzeri hosting",
-  "KVKK aydınlatma, iade ve kullanım şartları",
+  "FerPay bakiyesi (numara buradan düşer)",
+  "Domain: hizlismsal.com → Vercel DNS",
+  "FERPAY_TOKEN sunucu ortam değişkeni",
+  "Kendi müşteri ödemen sonra (iyzico) — şimdilik FerPay cüzdanı",
 ];
 
 export default function HomePage() {
@@ -45,15 +45,15 @@ export default function HomePage() {
         <div>
           <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs text-primary">
             <Timer className="size-3.5" />
-            Demo · gerçek SMS gitmez
+            FerPay · canlı stok
           </p>
           <h1 className="font-heading max-w-xl text-4xl leading-[1.1] font-semibold tracking-tight sm:text-5xl">
             Sanal numara ile SMS onayını saniyeler içinde al.
           </h1>
           <p className="mt-4 max-w-lg text-base leading-7 text-muted-foreground">
             Hizmeti seç, ülkeyi belirle, numarayı kirala. Kod gelen kutusuna
-            düşer; kopyala, doğrulamayı bitir. Bu sürüm tarayıcıda çalışan tam
-            bir demo — birlikte canlıya çıkmak için gerekenler aşağıda.
+            düşer. Numaralar ferpay.com.tr API’sinden alınır; bakiye oradaki
+            cüzdandan düşer.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/hizmetler" className={cn(buttonVariants({ size: "lg" }))}>
@@ -70,15 +70,15 @@ export default function HomePage() {
           <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 text-sm">
             <div>
               <dt className="text-muted-foreground">Hizmet</dt>
-              <dd className="font-medium">16 platform</dd>
+              <dd className="font-medium">FerPay listesi</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Ülke</dt>
-              <dd className="font-medium">12 hat havuzu</dd>
+              <dd className="font-medium">Anlık stok</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Süre</dt>
-              <dd className="font-medium">15 dk kiralama</dd>
+              <dd className="font-medium">API süresi</dd>
             </div>
           </dl>
         </div>
@@ -122,12 +122,12 @@ export default function HomePage() {
             <Shield className="mt-0.5 size-5 text-primary" />
             <div>
               <h2 className="font-heading text-xl font-semibold">
-                Canlı site için ne lazım?
+                Sıradaki işler
               </h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Arayüz hazır. Gerçek SMS ve tahsilat için aşağıdaki parçalar
-                bağlanır. Dolandırıcılık, başkasının hesabını ele geçirme veya
-                platform kurallarını aşmak için kullanılmaz.
+                API bağlandı. Domain’i Vercel’e yönlendirince hizlismsal.com
+                açılır. Bu site başkasının hesabını ele geçirmek veya
+                dolandırıcılık için kullanılmaz.
               </p>
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {NEED.map((item) => (
