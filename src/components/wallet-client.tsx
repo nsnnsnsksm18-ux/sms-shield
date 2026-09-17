@@ -38,11 +38,11 @@ export function WalletClient() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Bu tarayıcıdaki kiralamalar</CardTitle>
+          <CardTitle>Bu tarayıcıdaki numaralar</CardTitle>
         </CardHeader>
         <CardContent>
           {rentals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Henüz kiralama yok.</p>
+            <p className="text-sm text-muted-foreground">Henüz numara yok.</p>
           ) : (
             <ul className="divide-y divide-white/8">
               {rentals.slice(0, 12).map((tx) => (

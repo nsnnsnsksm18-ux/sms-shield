@@ -8,9 +8,13 @@ export function formatTL(value: number) {
 
 export function formatTimeLeft(expiresAt: number, now = Date.now()) {
   const ms = Math.max(0, expiresAt - now);
-  const total = Math.ceil(ms / 1000);
-  const m = Math.floor(total / 60);
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
+  if (h > 0) {
+    return `${h} sa ${m.toString().padStart(2, "0")} dk`;
+  }
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
@@ -19,6 +23,15 @@ export function formatClock(ts: number) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+  }).format(ts);
+}
+
+export function formatEndsAt(ts: number) {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(ts);
 }
 

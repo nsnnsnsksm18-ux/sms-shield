@@ -9,16 +9,21 @@ import { ServiceMark } from "@/components/service-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatClock, formatTL } from "@/lib/format";
-import { useStore, type LiveRental } from "@/lib/store";
+import { extractCode } from "@/lib/ferpay-display";
+import { formatClock, formatEndsAt, formatTimeLeft, formatTL } from "@/lib/format";
+import { isRentalLive, useStore, type LiveRental } from "@/lib/store";
+import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
-function statusMeta(rental: LiveRental) {
+function statusMeta(rental: LiveRental, now: number) {
   if (rental.status === "banned") {
     return { label: "İptal", className: "bg-white/8 text-muted-foreground" };
   }
-  if (rental.message) {
-    return { label: "Kod geldi", className: "bg-teal-400/15 text-teal-200" };
+  if (now && !isRentalLive(rental, now)) {
+    return { label: "24 saat doldu", className: "bg-white/8 text-muted-foreground" };
+  }
+  if (rental.messages.length > 0) {
+    return { label: "Aktif · SMS geliyor", className: "bg-teal-400/15 text-teal-200" };
   }
   if (rental.status === "received") {
     return { label: "SMS bekleniyor", className: "bg-amber-400/15 text-amber-200" };
@@ -29,16 +34,13 @@ function statusMeta(rental: LiveRental) {
 export function InboxClient() {
   const params = useSearchParams();
   const router = useRouter();
+  const now = useNow();
   const { rentals, cancel, refreshRental } = useStore();
   const requested = params.get("hat");
   const selectedId =
     requested && rentals.some((r) => r.id === requested) ? requested : rentals[0]?.id;
   const selected = rentals.find((r) => r.id === selectedId) ?? null;
-
-  const pollId =
-    selected && !selected.message && selected.status !== "banned"
-      ? selected.id
-      : null;
+  const pollId = selected && isRentalLive(selected, now) ? selected.id : null;
 
   useEffect(() => {
     if (!pollId) return;
@@ -58,9 +60,10 @@ export function InboxClient() {
     return (
       <div className="rounded-2xl border border-dashed border-white/12 px-6 py-20 text-center">
         <Inbox className="mx-auto mb-3 size-8 text-muted-foreground" />
-        <p className="font-heading text-lg font-medium">Henüz kiralık hat yok</p>
+        <p className="font-heading text-lg font-medium">Henüz numara yok</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          Bir hizmet seçip numara kiralayın. Gelen SMS 4–5 saniyede bir kontrol edilir.
+          Hizmet seçip numarayı al. 24 saat boyunca gelen SMS’ler burada birikir;
+          tek kullanımlık değil.
         </p>
         <Button className="mt-5" render={<Link href="/hizmetler" />}>
           Hizmetlere git
@@ -90,30 +93,40 @@ export function InboxClient() {
                 name={rental.platform}
                 className="size-8 text-[11px]"
               />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{rental.platform}</p>
                 <p className="truncate font-mono text-xs text-muted-foreground">
                   {rental.phone}
                 </p>
               </div>
+              {rental.messages.length > 0 && (
+                <span className="rounded-full bg-teal-400/15 px-1.5 py-0.5 text-[10px] text-teal-200">
+                  {rental.messages.length}
+                </span>
+              )}
             </div>
           </button>
         ))}
       </div>
-      {selected && <RentalPane rental={selected} onCancel={cancel} />}
+      {selected && <RentalPane rental={selected} now={now} onCancel={cancel} />}
     </div>
   );
 }
 
 function RentalPane({
   rental,
+  now,
   onCancel,
 }: {
   rental: LiveRental;
+  now: number;
   onCancel: (id: string) => void;
 }) {
-  const meta = statusMeta(rental);
-  const waiting = rental.status === "received" && !rental.message;
+  const live = isRentalLive(rental, now);
+  const meta = statusMeta(rental, now);
+  const waiting = live && rental.messages.length === 0;
+  const canCancel = waiting;
+  const smsNewestFirst = [...rental.messages].reverse();
 
   return (
     <Card>
@@ -129,47 +142,74 @@ function RentalPane({
         </div>
         <div className="flex flex-wrap gap-2">
           <CopyButton value={rental.phone.replace(/\s/g, "")} label="Numarayı kopyala" />
-          {waiting && (
+          {canCancel && (
             <Button variant="destructive" size="sm" onClick={() => onCancel(rental.id)}>
               İptal et · iade
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div
+          className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
+          suppressHydrationWarning
+        >
           <Timer className="size-4" />
-          {waiting
-            ? `Bitiş ${formatClock(rental.expiresAt)}`
-            : `Tutar ${formatTL(rental.price)}`}
+          {live
+            ? `Kalan ${now ? formatTimeLeft(rental.expiresAt, now) : formatEndsAt(rental.expiresAt)} · bitiş ${formatEndsAt(rental.expiresAt)}`
+            : `24 saat doldu · ${formatTL(rental.price)}`}
         </div>
         {waiting && (
           <div className="flex items-center gap-3 rounded-xl border border-dashed border-primary/25 bg-primary/6 px-4 py-5">
             <Loader2 className="size-5 animate-spin text-primary" />
             <div>
-              <p className="text-sm font-medium">SMS bekleniyor</p>
+              <p className="text-sm font-medium">İlk SMS bekleniyor</p>
               <p className="text-xs text-muted-foreground">
-                FerPay 5 saniyede bir sorgulanıyor. Uygulamaya numarayı yaz, kodu bekle.
+                Hat 24 saat açık. FerPay 5 saniyede bir sorgulanır; gelen her SMS
+                burada kalır.
               </p>
             </div>
           </div>
         )}
-        {rental.message ? (
-          <div className="rounded-2xl bg-white/5 p-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{rental.platform}</span>
-              <span>{formatClock(rental.createdAt)}</span>
-            </div>
-            <p className="mt-2 text-sm leading-6 whitespace-pre-wrap">{rental.message}</p>
-            {rental.code && (
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <p className="font-mono text-3xl tracking-[0.28em] text-primary">
-                  {rental.code}
-                </p>
-                <CopyButton value={rental.code} label="Kodu kopyala" />
-              </div>
-            )}
-          </div>
+        {live && rental.messages.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Bu numara 24 saat boyunca sınırsız SMS alır. Yeni mesajlar alta eklenir.
+          </p>
+        )}
+        {smsNewestFirst.length > 0 ? (
+          <ul className="space-y-3">
+            {smsNewestFirst.map((text, index) => {
+              const code = extractCode(text);
+              const newest = index === 0;
+              return (
+                <li
+                  key={`${rental.id}-${rental.messages.length - index}-${text.slice(0, 24)}`}
+                  className={cn(
+                    "rounded-2xl bg-white/5 p-4",
+                    newest && "ring-1 ring-primary/25",
+                  )}
+                >
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{rental.platform}</span>
+                    <span>{newest ? "Son SMS" : formatClock(rental.createdAt)}</span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 whitespace-pre-wrap">{text}</p>
+                  {code && (
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <p className="font-mono text-3xl tracking-[0.28em] text-primary">
+                        {code}
+                      </p>
+                      <CopyButton value={code} label="Kodu kopyala" />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         ) : rental.status === "banned" ? (
-          <p className="text-sm text-muted-foreground">Bu kiralama iptal edildi.</p>
+          <p className="text-sm text-muted-foreground">Bu numara iptal edildi.</p>
+        ) : !live ? (
+          <p className="text-sm text-muted-foreground">
+            24 saat doldu. Bu hatta yeni SMS gelmez.
+          </p>
         ) : null}
       </CardContent>
     </Card>

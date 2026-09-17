@@ -12,8 +12,9 @@ export default function LegalPage() {
       </h1>
       <div className="mt-6 space-y-4 text-sm leading-7 text-muted-foreground">
         <p>
-          Numaralar üçüncü taraf FerPay altyapısından kiralanır. Markalar
-          (WhatsApp, Telegram, Instagram vb.) ilgili şirketlere aittir.
+          Numaralar üçüncü taraf FerPay altyapısından alınır (24 saat, sınırsız
+          SMS). Markalar (WhatsApp, Telegram, Instagram vb.) ilgili şirketlere
+          aittir.
         </p>
         <p>
           Başkasının hesabına izinsiz girmek, dolandırıcılık, spam veya bir

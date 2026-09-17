@@ -30,7 +30,7 @@ export function ServiceCard({
           <div>
             <h3 className="font-heading text-base font-medium">{platform.name}</h3>
             <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
-              FerPay stoklu sanal numara. Ülke seçip kirala, SMS gelen kutusuna düşer.
+              FerPay stoklu sanal numara. Alınca 24 saat açık; sınırsız SMS gelen kutuya düşer.
             </p>
           </div>
           <div className="mt-auto flex items-end justify-between pt-1">

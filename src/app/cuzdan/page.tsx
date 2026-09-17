@@ -3,7 +3,7 @@ import { WalletClient } from "@/components/wallet-client";
 
 export const metadata: Metadata = {
   title: "Cüzdan",
-  description: "FerPay bakiyesini gör, kiralamaları listele.",
+  description: "FerPay bakiyesini gör, aldığın numaraları listele.",
 };
 
 export default function WalletPage() {

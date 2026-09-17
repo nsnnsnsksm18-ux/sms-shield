@@ -4,7 +4,7 @@ import { InboxClient } from "@/components/inbox-client";
 
 export const metadata: Metadata = {
   title: "Gelen kutusu",
-  description: "Kiraladığın numaralara gelen SMS kodlarını görüntüle.",
+  description: "Aldığın numaralara 24 saat boyunca gelen SMS’leri görüntüle.",
 };
 
 export default function InboxPage() {
@@ -14,8 +14,8 @@ export default function InboxPage() {
         Gelen kutusu
       </h1>
       <p className="mt-2 mb-8 max-w-2xl text-sm text-muted-foreground">
-        Aktif hatlar ve gelen kodlar burada. SMS FerPay’den 5 saniyede bir
-        çekilir.
+        Aldığın hat 24 saat açık kalır. Gelen her SMS burada birikir; tek
+        kodda durmaz. FerPay 5 saniyede bir sorgulanır.
       </p>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Yükleniyor…</p>}>
         <InboxClient />

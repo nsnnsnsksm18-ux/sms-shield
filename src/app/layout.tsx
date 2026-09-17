@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · Hızlı SMS Al",
   },
   description:
-    "Sanal numara ile SMS onay. Stok ve numaralar FerPay üzerinden alınır.",
+    "Sanal numara al, 24 saat sınırsız SMS oku. Stok FerPay üzerinden gelir.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

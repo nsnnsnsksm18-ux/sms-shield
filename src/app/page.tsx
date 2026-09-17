@@ -26,8 +26,8 @@ const STEPS = [
   },
   {
     icon: Smartphone,
-    title: "Numarayı al, kodu kopyala",
-    text: "Kirala, numarayı uygulamaya yaz. SMS gelen kutusuna düşer.",
+    title: "Numarayı al, SMS’leri oku",
+    text: "Numarayı uygulamaya yaz. 24 saat boyunca gelen her SMS kutuya düşer.",
   },
 ];
 
@@ -45,19 +45,19 @@ export default function HomePage() {
         <div>
           <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs text-primary">
             <Timer className="size-3.5" />
-            FerPay · canlı stok
+            FerPay · 24 saat sınırsız SMS
           </p>
           <h1 className="font-heading max-w-xl text-4xl leading-[1.1] font-semibold tracking-tight sm:text-5xl">
-            Sanal numara ile SMS onayını saniyeler içinde al.
+            Numarayı al, 24 saat boyunca sınırsız SMS oku.
           </h1>
           <p className="mt-4 max-w-lg text-base leading-7 text-muted-foreground">
-            Hizmeti seç, ülkeyi belirle, numarayı kirala. Kod gelen kutusuna
-            düşer. Numaralar ferpay.com.tr API’sinden alınır; bakiye oradaki
-            cüzdandan düşer.
+            Hizmeti seç, ülkeyi belirle, numarayı al. Kiralama yok — hat 24
+            saat açık kalır, gelen her SMS kutuya düşer. Bakiye ferpay.com.tr
+            cüzdanından kesilir.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/hizmetler" className={cn(buttonVariants({ size: "lg" }))}>
-              Numara kirala
+              Numara al
               <ArrowRight />
             </Link>
             <Link
@@ -78,7 +78,7 @@ export default function HomePage() {
             </div>
             <div>
               <dt className="text-muted-foreground">Süre</dt>
-              <dd className="font-medium">API süresi</dd>
+              <dd className="font-medium">24 saat</dd>
             </div>
           </dl>
         </div>

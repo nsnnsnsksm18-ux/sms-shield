@@ -8,8 +8,8 @@ const BUBBLES = [
     code: "482917",
   },
   {
-    from: "Telegram",
-    text: "Telegram code: 119304",
+    from: "WhatsApp",
+    text: "WhatsApp kodun: 119304. Aynı hat, ikinci SMS.",
     code: "119304",
   },
 ];
@@ -32,7 +32,7 @@ export function PhonePreview() {
                 +90 532 441 08 17
               </p>
             </div>
-            <Badge className="bg-teal-400/15 text-teal-200">4:12</Badge>
+            <Badge className="bg-teal-400/15 text-teal-200">24 saat</Badge>
           </div>
           <div className="space-y-2.5">
             {BUBBLES.map((sms) => (
@@ -52,7 +52,7 @@ export function PhonePreview() {
             ))}
           </div>
           <p className="mt-4 text-center text-[11px] text-white/35">
-            Kod 4–9 sn içinde düşer · kopyala, yapıştır
+            24 saat sınırsız SMS · kopyala, yapıştır
           </p>
         </div>
       </div>

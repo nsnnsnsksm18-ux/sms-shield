@@ -100,15 +100,16 @@ export function ServiceRent({ platformCode }: { platformCode: string }) {
               {platform.name} SMS onay
             </h1>
             <p className="mt-2 max-w-xl text-muted-foreground">
-              Numara FerPay üzerinden kiralanır. Gelen SMS bu sitedeki kutuya düşer.
+              Numarayı alırsın; 24 saat boyunca bu hattan sınırsız SMS gelir.
+              Tek kullanımlık kod değil — gelen kutusu her mesajı tutar.
             </p>
           </div>
         </div>
         <ul className="mt-8 grid gap-3 sm:grid-cols-3">
           <li className="rounded-xl border border-white/8 bg-card/60 p-4">
             <Clock className="mb-2 size-4 text-primary" />
-            <p className="text-sm font-medium">Süre FerPay’den</p>
-            <p className="text-xs text-muted-foreground">Siparişin expiresAt değeri</p>
+            <p className="text-sm font-medium">24 saat açık</p>
+            <p className="text-xs text-muted-foreground">Hat kapanana kadar sınırsız SMS</p>
           </li>
           <li className="rounded-xl border border-white/8 bg-card/60 p-4">
             <Globe className="mb-2 size-4 text-primary" />
@@ -117,8 +118,8 @@ export function ServiceRent({ platformCode }: { platformCode: string }) {
           </li>
           <li className="rounded-xl border border-white/8 bg-card/60 p-4">
             <ShieldAlert className="mb-2 size-4 text-primary" />
-            <p className="text-sm font-medium">Canlı SMS</p>
-            <p className="text-xs text-muted-foreground">Kod 4–5 sn aralıkla sorgulanır</p>
+            <p className="text-sm font-medium">Sınırsız SMS</p>
+            <p className="text-xs text-muted-foreground">5 sn’de bir tüm gelenler çekilir</p>
           </li>
         </ul>
       </div>
@@ -170,11 +171,11 @@ export function ServiceRent({ platformCode }: { platformCode: string }) {
             onClick={onRent}
             disabled={!canPay || busy}
           >
-            {busy ? "Alınıyor…" : "Numarayı kirala"}
+            {busy ? "Alınıyor…" : "Numarayı al · 24 saat"}
           </button>
           <p className="text-xs leading-5 text-muted-foreground">
-            Tıklayınca FerPay bakiyenden düşer. SMS gelmezse gelen kutusundan
-            iptal et; FerPay iade eder.
+            Tıklayınca FerPay bakiyenden düşer. Numara 24 saat senindir. İlk
+            SMS gelmezse gelen kutusundan iptal et; FerPay iade eder.
           </p>
         </CardContent>
       </Card>

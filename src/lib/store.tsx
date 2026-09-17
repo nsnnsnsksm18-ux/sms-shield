@@ -10,9 +10,11 @@ import {
   useSyncExternalStore,
 } from "react";
 import { toast } from "sonner";
-import { extractCode, normalizeMessage } from "@/lib/ferpay-display";
+import { extractCode, messageList } from "@/lib/ferpay-display";
 
-const KEY = "hizlismsal-rentals-v1";
+const KEY = "hizlismsal-hatlar-v2";
+const LEGACY_KEY = "hizlismsal-rentals-v1";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type LiveRental = {
   id: string;
@@ -25,7 +27,7 @@ export type LiveRental = {
   status: string;
   expiresAt: number;
   createdAt: number;
-  message: string;
+  messages: string[];
   code: string | null;
 };
 
@@ -47,10 +49,66 @@ type Store = {
 
 const Ctx = createContext<Store | null>(null);
 
+export function isRentalLive(rental: LiveRental, now?: number) {
+  if (rental.status === "banned") return false;
+  if (!now) return true;
+  return rental.expiresAt > now;
+}
+
+function mergeMessages(prev: string[], next: string[]) {
+  const out = [...prev];
+  for (const item of next) {
+    if (item && !out.includes(item)) out.push(item);
+  }
+  return out;
+}
+
+function latestCode(messages: string[]) {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const code = extractCode(messages[i]);
+    if (code) return code;
+  }
+  return null;
+}
+
+function coerceRental(raw: unknown): LiveRental | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== "string" || !r.id) return null;
+  const messages = Array.isArray(r.messages)
+    ? r.messages.flatMap((item) => messageList(item))
+    : messageList(r.message);
+  const createdAt = typeof r.createdAt === "number" ? r.createdAt : Date.now();
+  const expiresAt =
+    typeof r.expiresAt === "number" && r.expiresAt > 0
+      ? r.expiresAt
+      : createdAt + DAY_MS;
+  return {
+    id: r.id,
+    phone: String(r.phone ?? "—"),
+    platform: String(r.platform ?? ""),
+    platformCode: String(r.platformCode ?? ""),
+    country: String(r.country ?? ""),
+    countryCode: String(r.countryCode ?? ""),
+    price: typeof r.price === "number" ? r.price : 0,
+    status: String(r.status ?? "received"),
+    expiresAt,
+    createdAt,
+    messages,
+    code: latestCode(messages),
+  };
+}
+
 function readDisk(): LiveRental[] {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as LiveRental[]) : [];
+    const raw =
+      localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    const list = Array.isArray(parsed) ? parsed : [];
+    return list
+      .map(coerceRental)
+      .filter((item): item is LiveRental => item != null);
   } catch {
     return [];
   }
@@ -154,7 +212,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         toast.error("Numara alınamadı");
         return null;
       }
-      const message = normalizeMessage(tx.detail?.message);
+      const createdAt = Date.now();
+      const messages = messageList(tx.detail?.message);
       const rental: LiveRental = {
         id: tx.id,
         phone: tx.detail?.phone || "—",
@@ -164,14 +223,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         countryCode: input.country,
         price: tx.amount ?? 0,
         status: tx.status || "received",
-        expiresAt: tx.expiresAt ? Date.parse(tx.expiresAt) : Date.now() + 15 * 60_000,
-        createdAt: Date.now(),
-        message,
-        code: extractCode(message),
+        expiresAt: tx.expiresAt ? Date.parse(tx.expiresAt) : createdAt + DAY_MS,
+        createdAt,
+        messages,
+        code: latestCode(messages),
       };
       persist([rental, ...memory.filter((item) => item.id !== rental.id)]);
       if (typeof result.balance === "number") setBalance(result.balance);
-      toast.success(`${rental.phone} kiralandı`);
+      toast.success(`${rental.phone} alındı · 24 saat açık`);
       return rental;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Alım başarısız");
@@ -188,22 +247,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         amount?: number;
         detail?: { phone?: string; platform?: string; message?: unknown };
       }>(`/api/transactions/${encodeURIComponent(id)}`);
-      const message = normalizeMessage(tx.detail?.message);
       persist(
-        memory.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                status: tx.status || item.status,
-                phone: tx.detail?.phone || item.phone,
-                platform: tx.detail?.platform || item.platform,
-                expiresAt: tx.expiresAt ? Date.parse(tx.expiresAt) : item.expiresAt,
-                price: tx.amount ?? item.price,
-                message,
-                code: extractCode(message),
-              }
-            : item,
-        ),
+        memory.map((item) => {
+          if (item.id !== id) return item;
+          const incoming = messageList(tx.detail?.message);
+          const messages = incoming.length
+            ? mergeMessages(item.messages, incoming)
+            : item.messages;
+          return {
+            ...item,
+            status: tx.status || item.status,
+            phone: tx.detail?.phone || item.phone,
+            platform: tx.detail?.platform || item.platform,
+            expiresAt: tx.expiresAt ? Date.parse(tx.expiresAt) : item.expiresAt,
+            price: tx.amount ?? item.price,
+            messages,
+            code: latestCode(messages),
+          };
+        }),
       );
     } catch {
       /* keep last snapshot */

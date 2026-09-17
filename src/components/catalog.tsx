@@ -78,7 +78,7 @@ export function Catalog({
             {heading}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            FerPay stoğundan ülke ve hizmet seç, numarayı kirala.
+            FerPay stoğundan ülke ve hizmet seç, numarayı al. 24 saat sınırsız SMS.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

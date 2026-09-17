@@ -14,7 +14,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { formatTL } from "@/lib/format";
-import { useStore } from "@/lib/store";
+import { isRentalLive, useStore } from "@/lib/store";
+import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -27,9 +28,8 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname();
   const { balance, rentals } = useStore();
-  const waiting = rentals.filter(
-    (r) => r.status === "received" && !r.message,
-  ).length;
+  const now = useNow();
+  const waiting = rentals.filter((r) => isRentalLive(r, now)).length;
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/8 bg-background/75 backdrop-blur-xl">
@@ -47,7 +47,10 @@ export function SiteHeader() {
             >
               {item.label}
               {item.href === "/gelen-kutusu" && waiting > 0 && (
-                <span className="ml-1.5 inline-flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                <span
+                  className="ml-1.5 inline-flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground"
+                  suppressHydrationWarning
+                >
                   {waiting}
                 </span>
               )}
@@ -71,7 +74,7 @@ export function SiteHeader() {
             href="/hizmetler"
             className={cn(buttonVariants({ size: "sm" }), "hidden sm:inline-flex")}
           >
-            Numara kirala
+            Numara al
           </Link>
           <Sheet>
             <SheetTrigger

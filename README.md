@@ -32,9 +32,12 @@ npm start
 
 ## Akış
 
+FerPay’de kiralama yok. Numarayı alırsın; 24 saat boyunca o hattan sınırsız
+SMS gelir (tek kullanımlık kod değil).
+
 1. ferpay.com.tr bakiyesi
 2. Hizmet + ülke → `POST /api/sms/v1/buy`
-3. Gelen kutusu `GET /api/sms/v1/transactions/{id}` (5 sn)
-4. İptal `DELETE /api/sms/v1/buy/{id}/cancel`
+3. Gelen kutusu 24 saat `GET /api/sms/v1/transactions/{id}` (5 sn) — tüm SMS’ler
+4. İlk SMS gelmezse iptal `DELETE /api/sms/v1/buy/{id}/cancel`
 
 Bazı ağlarda FerPay Cloudflare 403 dönebilir; Vercel çıkışı genelde geçer.
