@@ -8,7 +8,7 @@ import { formatClock, formatTL } from "@/lib/format";
 import { useStore } from "@/lib/store";
 
 export function WalletClient() {
-  const { balance, transactions, hydrated, topUp, resetDemo } = useStore();
+  const { balance, transactions, topUp, resetDemo } = useStore();
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
@@ -21,7 +21,7 @@ export function WalletClient() {
         </CardHeader>
         <CardContent>
           <p className="font-heading text-4xl font-semibold tracking-tight">
-            {hydrated ? formatTL(balance) : "…"}
+            <span suppressHydrationWarning>{formatTL(balance)}</span>
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Demo cüzdan. Ödeme alınmaz; paketler bakiyeyi yerelde artırır.
@@ -52,9 +52,7 @@ export function WalletClient() {
           <CardTitle>Hareketler</CardTitle>
         </CardHeader>
         <CardContent>
-          {!hydrated ? (
-            <p className="text-sm text-muted-foreground">Yükleniyor…</p>
-          ) : transactions.length === 0 ? (
+          {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">Henüz hareket yok.</p>
           ) : (
             <ul className="divide-y divide-white/8">

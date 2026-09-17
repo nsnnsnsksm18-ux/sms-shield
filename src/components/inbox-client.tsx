@@ -35,7 +35,7 @@ function useNow(active: boolean) {
 export function InboxClient() {
   const params = useSearchParams();
   const router = useRouter();
-  const { rentals, cancel, hydrated } = useStore();
+  const { rentals, cancel } = useStore();
   const requested = params.get("hat");
   const selectedId = requested && rentals.some((r) => r.id === requested)
     ? requested
@@ -51,15 +51,6 @@ export function InboxClient() {
       }),
     [rentals],
   );
-
-  if (!hydrated) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
-        Gelen kutusu yükleniyor…
-      </div>
-    );
-  }
 
   if (rentals.length === 0) {
     return (

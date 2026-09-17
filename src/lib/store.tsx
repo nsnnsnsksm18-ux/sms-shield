@@ -33,13 +33,12 @@ const emptyState: StoreState = {
       type: "topup",
       amount: START_BALANCE,
       note: "Demo bakiyesi",
-      createdAt: Date.now(),
+      createdAt: Date.UTC(2026, 0, 1),
     },
   ],
 };
 
 type Store = StoreState & {
-  hydrated: boolean;
   rent: (serviceSlug: string, countryCode: string) => Rental | null;
   cancel: (rentalId: string) => void;
   topUp: (amount: number, bonus: number, label: string) => void;
@@ -128,17 +127,8 @@ function getServerSnapshot() {
   return emptyState;
 }
 
-function useHydrated() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-}
-
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const hydrated = useHydrated();
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -255,8 +245,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<Store>(
-    () => ({ ...state, hydrated, rent, cancel, topUp, resetDemo }),
-    [state, hydrated, rent, cancel, topUp, resetDemo],
+    () => ({ ...state, rent, cancel, topUp, resetDemo }),
+    [state, rent, cancel, topUp, resetDemo],
   );
 
   return (
