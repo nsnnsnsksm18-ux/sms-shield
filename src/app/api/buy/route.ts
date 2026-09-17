@@ -1,6 +1,9 @@
 import { buyNumber, FerPayError, mapMessage } from "@/lib/ferpay";
 import { apiError } from "@/lib/api-error";
 
+export const preferredRegion = ["fra1", "cdg1", "arn1"];
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {

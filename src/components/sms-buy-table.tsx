@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, ShoppingCart } from "lucide-react";
 import { HexMark } from "@/components/hex-mark";
 import { Input } from "@/components/ui/input";
+import { DEMO_PLATFORMS } from "@/data/demo-platforms";
 import type { CountrySummary, PlatformSummary, ServiceOption } from "@/lib/platform-types";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -30,11 +31,13 @@ function PlatformCard({
   platform,
   defaultCountry,
   busy,
+  demo,
   onBuy,
 }: {
   platform: PlatformSummary;
   defaultCountry?: string;
   busy: boolean;
+  demo?: boolean;
   onBuy: (input: {
     country: CountrySummary;
     service: ServiceOption;
@@ -169,15 +172,15 @@ function PlatformCard({
 
       <button
         type="button"
-        disabled={!canBuy || busy}
+        disabled={!canBuy || busy || demo}
         onClick={() => {
-          if (!country || !service) return;
+          if (demo || !country || !service) return;
           void onBuy({ country, service, qty });
         }}
         className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3d4dff] text-sm font-semibold text-white hover:bg-[#3240e6] disabled:opacity-50"
       >
         <ShoppingCart className="size-4" />
-        {busy ? "Alınıyor…" : "Satın Al"}
+        {demo ? "Bağlantı yok" : busy ? "Alınıyor…" : "Satın Al"}
       </button>
     </article>
   );
@@ -189,6 +192,7 @@ export function SmsBuyTable() {
   const [query, setQuery] = useState("");
   const [platforms, setPlatforms] = useState<PlatformSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [demo, setDemo] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -197,10 +201,16 @@ export function SmsBuyTable() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Liste alınamadı");
-        if (alive) setPlatforms(data.platforms as PlatformSummary[]);
+        if (!alive) return;
+        setDemo(false);
+        setError(null);
+        setPlatforms(data.platforms as PlatformSummary[]);
       })
       .catch((err: Error) => {
-        if (alive) setError(err.message);
+        if (!alive) return;
+        setError(err.message);
+        setDemo(true);
+        setPlatforms(DEMO_PLATFORMS);
       });
     return () => {
       alive = false;
@@ -244,6 +254,13 @@ export function SmsBuyTable() {
 
   return (
     <div>
+      {demo && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Canlı FerPay stoğu bağlanamadı. Kartlar örnek, Satın Al kapalı.
+          {error ? ` (${error})` : ""}
+        </div>
+      )}
+
       <div className="relative mb-5">
         <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8b90b0]" />
         <Input
@@ -255,12 +272,7 @@ export function SmsBuyTable() {
         />
       </div>
 
-      {error ? (
-        <div className="rounded-2xl bg-white px-6 py-16 text-center shadow-[0_8px_24px_rgba(40,44,90,0.06)]">
-          <p className="font-semibold text-[#2b2f5c]">Liste alınamadı</p>
-          <p className="mx-auto mt-2 max-w-lg text-sm text-[#8b90b0]">{error}</p>
-        </div>
-      ) : platforms == null ? (
+      {platforms == null ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="h-[360px] animate-pulse rounded-2xl bg-white" />
@@ -277,6 +289,7 @@ export function SmsBuyTable() {
               key={platform.code}
               platform={platform}
               busy={busyKey === platform.code}
+              demo={demo}
               onBuy={({ country, service, qty }) =>
                 onBuy(platform, country, service, qty)
               }
